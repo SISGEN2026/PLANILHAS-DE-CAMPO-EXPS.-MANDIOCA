@@ -6,6 +6,8 @@
     <title>Planilhas de Campo - Tartarugalzinho</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- jsPDF for PDF Export -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
         body {
@@ -56,8 +58,8 @@
                     <button onclick="saveData()" title="Salvar" class="bg-emerald-700 hover:bg-emerald-600 text-white px-2.5 py-1 rounded-xl text-xs font-semibold flex items-center gap-1 transition shadow">
                         <i class="fa-solid fa-floppy-disk"></i> <span class="hidden xs:inline">Salvar</span>
                     </button>
-                    <button onclick="exportData()" title="Exportar CSV" class="bg-emerald-700 hover:bg-emerald-600 text-white px-2.5 py-1 rounded-xl text-xs font-semibold flex items-center gap-1 transition shadow">
-                        <i class="fa-solid fa-download"></i> <span class="hidden xs:inline">Exportar</span>
+                    <button onclick="exportPDF()" title="Exportar PDF" class="bg-emerald-700 hover:bg-emerald-600 text-white px-2.5 py-1 rounded-xl text-xs font-semibold flex items-center gap-1 transition shadow">
+                        <i class="fa-solid fa-file-pdf"></i> <span class="hidden xs:inline">PDF</span>
                     </button>
                     <button onclick="confirmClearData()" title="Limpar" class="bg-rose-700/90 hover:bg-rose-700 text-white px-2 py-1 rounded-xl text-xs font-semibold flex items-center transition shadow">
                         <i class="fa-solid fa-trash-can"></i>
@@ -164,7 +166,7 @@
             <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center pb-3 mb-3 border-b border-slate-200 gap-2">
                 <div>
                     <h2 id="experimentTitle" class="text-sm sm:text-base font-bold text-slate-800">AJUSTE SAZONAL TARTARUGALZINHO</h2>
-                    <p class="text-[11px] text-slate-500">24 quadrados por parcela (6 linhas × 4 colunas). As 8 plantas centrais em vermelho são interativas (notas 1 a 5).</p>
+                    <p class="text-[11px] text-slate-500">24 quadrados por parcela (6 linhas × 4 colunas). As 8 plantas úteis centrais são interativas (notas 1 a 5).</p>
                 </div>
                 <div class="flex items-center gap-1.5 bg-slate-100 px-2 py-1 rounded-xl border border-slate-200 text-[11px] font-medium text-slate-700 shrink-0">
                     <i class="fa-solid fa-arrow-right text-emerald-600"></i>
@@ -174,7 +176,7 @@
 
             <!-- Field Sheets Container -->
             <div id="blocksContainer" class="space-y-6 pb-6">
-                <!-- Dynamically rendered blocks & plots -->
+                <!-- Dynamically rendered blocks & plots side-by-side -->
             </div>
 
             <div class="mt-3 pt-3 border-t-2 border-dashed border-slate-300 flex items-center justify-center gap-2 text-slate-400 font-bold tracking-widest text-xs py-2.5 bg-slate-50 rounded-xl">
@@ -239,8 +241,7 @@
             poda: {}
         };
 
-        // Mapeamento exato da Área Útil (8 plantas centrais em grade de 6 linhas x 4 colunas)
-        // Linhas 1 a 4 (índices 1 a 4) e colunas 1 a 2 (índices 1 a 2) no padrão do desenho
+        // Mapeamento exato das 8 plantas úteis centrais no retângulo vermelho (linhas 1 a 4, colunas 1 a 2 de uma grade 6x4)
         const usefulPlantsMap = {
             "1_1": 5,
             "1_2": 4,
@@ -326,20 +327,21 @@
             let html = '';
             exp.blocks.forEach(block => {
                 html += `
-                    <div class="bg-slate-50/80 border border-slate-200 rounded-2xl p-3">
+                    <div class="bg-slate-50/90 border border-slate-200 rounded-2xl p-3">
                         <h3 class="text-xs sm:text-sm font-bold text-emerald-900 mb-2.5 flex items-center gap-2">
                             <i class="fa-solid fa-layer-group text-emerald-600"></i> ${block.name}
                         </h3>
-                        <!-- Grid responsivo para as parcelas no bloco -->
-                        <div class="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-2.5">
+                        <!-- Container com scroll horizontal em telas menores para exibir as parcelas lado a lado -->
+                        <div class="overflow-x-auto pb-2">
+                            <div class="flex items-stretch gap-3 min-w-max">
                 `;
 
                 block.plots.forEach(plotNum => {
                     html += `
-                        <div class="bg-white border border-slate-200 rounded-xl p-2 shadow-xs flex flex-col items-center">
-                            <div class="w-full flex justify-between items-center mb-1.5 px-0.5">
+                        <div class="bg-white border border-slate-200 rounded-xl p-2.5 shadow-xs flex flex-col items-center w-[124px] shrink-0">
+                            <div class="w-full flex justify-between items-center mb-2 px-1">
                                 <span class="text-[9px] font-semibold text-slate-400 uppercase">Parcela</span>
-                                <div class="bg-emerald-800 text-white px-2 py-0.2 rounded-full text-[10px] font-bold shadow-xs">
+                                <div class="bg-emerald-800 text-white w-5 h-5 rounded-full text-[10px] font-bold flex items-center justify-center shadow-xs">
                                     ${plotNum}
                                 </div>
                             </div>
@@ -358,19 +360,22 @@
                             const hasVal = val !== '';
 
                             if (isUseful) {
-                                let bgStyle = hasVal ? 'bg-emerald-600 text-white border-emerald-700 shadow-xs' : 'bg-red-50 hover:bg-red-100 text-red-900 border-red-500 ring-1 ring-red-400';
+                                // Plantas úteis destacadas com fundo vermelho claro e borda vermelha nítida conforme o desenho
+                                let bgStyle = hasVal 
+                                    ? 'bg-emerald-600 text-white border-emerald-700 shadow-xs' 
+                                    : 'bg-red-50 hover:bg-red-100 text-red-900 border-red-500 ring-1 ring-red-400/80';
                                 
                                 html += `
                                     <button onclick="handleCellClick('${block.id}', '${plotNum}', '${row}', '${col}', true)" 
                                         title="Planta Útil #${plantNumber} (Nota 1-5)"
-                                        class="h-7 sm:h-8 rounded font-bold text-xs transition flex flex-col items-center justify-center border select-none relative ${bgStyle}">
-                                        <span class="absolute top-0.2 left-0.5 text-[5px] opacity-70 font-normal">p${plantNumber}</span>
-                                        <span class="mt-0.5">${val}</span>
+                                        class="h-9 rounded font-bold text-xs transition flex flex-col items-center justify-center border select-none relative ${bgStyle}">
+                                        <span class="absolute top-0.5 left-0.5 text-[5px] opacity-75 font-normal">p${plantNumber}</span>
+                                        <span class="mt-1">${val}</span>
                                     </button>
                                 `;
                             } else {
                                 html += `
-                                    <div class="h-7 sm:h-8 rounded bg-slate-200/90 border border-slate-300 flex items-center justify-center text-[7px] text-slate-400 select-none">
+                                    <div class="h-9 rounded bg-slate-200/90 border border-slate-300 flex items-center justify-center text-[7px] text-slate-400 select-none">
                                         ·
                                     </div>
                                 `;
@@ -385,6 +390,7 @@
                 });
 
                 html += `
+                            </div>
                         </div>
                     </div>
                 `;
@@ -438,7 +444,7 @@
 
         function autoSaveToLocalStorage() {
             try {
-                localStorage.setItem('tartarugalzinho_field_data_vbm_v6', JSON.stringify(dataStore));
+                localStorage.setItem('tartarugalzinho_field_data_vbm_v7', JSON.stringify(dataStore));
             } catch (e) {
                 console.error("Storage error", e);
             }
@@ -446,7 +452,7 @@
 
         function loadFromLocalStorage() {
             try {
-                const saved = localStorage.getItem('tartarugalzinho_field_data_vbm_v6');
+                const saved = localStorage.getItem('tartarugalzinho_field_data_vbm_v7');
                 if (saved) {
                     dataStore = JSON.parse(saved);
                 }
@@ -476,46 +482,108 @@
             modal.classList.remove('hidden');
         }
 
-        function exportData() {
+        function exportPDF() {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF('p', 'mm', 'a4');
+            const expName = experimentsData[currentExperiment].title;
             const expData = dataStore[currentExperiment] || {};
-            const expName = currentExperiment === 'sazonal' ? 'Ajuste_Sazonal_VBM' : 'Poda_Fitossanitaria_VBM';
-            
-            let csvContent = "data:text/csv;charset=utf-8,Experimento,Bloco,Parcela,Planta_Util,Linha,Coluna,Severidade_VBM\n";
-            
+
+            // Cabeçalho do PDF
+            doc.setFillColor(6, 78, 59); // Emerald 900
+            doc.rect(0, 0, 210, 25, 'F');
+            doc.setTextColor(255, 255, 255);
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(14);
+            doc.text("COLETA DE CAMPO - TARTARUGALZINHO", 14, 12);
+            doc.setFontSize(10);
+            doc.setFont('helvetica', 'normal');
+            doc.text(`Experimento: ${expName}`, 14, 19);
+
+            let yPos = 35;
+            doc.setTextColor(30, 41, 59);
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(11);
+            doc.text("Registros de Severidade VBM por Bloco e Parcela:", 14, yPos);
+            yPos += 8;
+
+            // Tabela com dados
+            let tableData = [];
             const exp = experimentsData[currentExperiment];
-            exp.blocks.blocks?.forEach?.() || exp.blocks.forEach(block => {
+            
+            exp.blocks.forEach(block => {
                 block.plots.forEach(plotNum => {
                     for (const mapKey in usefulPlantsMap) {
                         const plantNum = usefulPlantsMap[mapKey];
                         const [row, col] = mapKey.split('_');
                         const cellKey = `${block.id}_${plotNum}_${row}_${col}`;
-                        const val = expData[cellKey] || '';
-                        csvContent += `${expName},${block.name},${plotNum},${plantNum},${parseInt(row)+1},${parseInt(col)+1},${val}\n`;
+                        const val = expData[cellKey];
+                        if (val) {
+                            tableData.push([
+                                block.name,
+                                `Parcela ${plotNum}`,
+                                `Planta Útil #${plantNum} (L:${parseInt(row)+1}, C:${parseInt(col)+1})`,
+                                `Nota ${val}`
+                            ]);
+                        }
                     }
                 });
             });
 
-            const encodedUri = encodeURI(csvContent);
-            const link = document.createElement("a");
-            link.setAttribute("href", encodedUri);
-            link.setAttribute("download", `${expName}_dados_campo.csv`);
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
+            if (tableData.length === 0) {
+                doc.setFont('helvetica', 'italic');
+                doc.setFontSize(10);
+                doc.text("Nenhuma planta avaliada preenchida até o momento.", 14, yPos);
+            } else {
+                // Desenhar tabela simples em PDF
+                doc.setFont('helvetica', 'bold');
+                doc.setFontSize(9);
+                doc.setFillColor(241, 245, 249);
+                doc.rect(14, yPos, 182, 8, 'F');
+                doc.text("Bloco", 18, yPos + 6);
+                doc.text("Parcela", 50, yPos + 6);
+                doc.text("Planta Útil", 90, yPos + 6);
+                doc.text("Nota VBM", 160, yPos + 6);
+                yPos += 8;
 
-            showToast("Arquivo CSV exportado com sucesso!", "success");
+                doc.setFont('helvetica', 'normal');
+                tableData.forEach((row, idx) => {
+                    if (yPos > 270) {
+                        doc.addPage();
+                        yPos = 20;
+                    }
+                    if (idx % 2 === 1) {
+                        doc.setFillColor(248, 250, 252);
+                        doc.rect(14, yPos, 182, 7, 'F');
+                    }
+                    doc.text(row[0], 18, yPos + 5);
+                    doc.text(row[1], 50, yPos + 5);
+                    doc.text(row[2], 90, yPos + 5);
+                    doc.text(row[3], 160, yPos + 5);
+                    yPos += 7;
+                });
+            }
+
+            // Rodapé
+            doc.setFontSize(8);
+            doc.setTextColor(100, 100, 100);
+            doc.text("Relatório gerado pelo Aplicativo de Planilhas de Campo - Tartarugalzinho", 14, 285);
+
+            // Salvar PDF
+            doc.save(`Relatorio_${currentExperiment}_Tartarugalzinho.pdf`);
+            showToast("Relatório PDF exportado com sucesso!", "success");
         }
 
         function closeModal() {
             document.getElementById('customModal').classList.add('hidden');
         }
-function showToast(message, type = 'success') {
+
+        function showToast(message, type = 'success') {
             const toast = document.getElementById('toast');
             const msgEl = document.getElementById('toastMsg');
             const iconEl = document.getElementById('toastIcon');
             
             msgEl.innerText = message;
-            if (type === 'success') {
+if (type === 'success') {
                 iconEl.className = "fa-solid fa-circle-check text-emerald-400";
             } else {
                 iconEl.className = "fa-solid fa-triangle-exclamation text-rose-400";
@@ -529,5 +597,9 @@ function showToast(message, type = 'success') {
     </script>
 </body>
 </html>
+
+
+
+
 
 
