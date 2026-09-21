@@ -8,6 +8,8 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- jsPDF for PDF Export -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <!-- html2canvas for JPEG Export -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
         body {
@@ -29,7 +31,6 @@
     </style>
 </head>
 <body class="h-full flex flex-col text-slate-800">
-
     <header class="bg-emerald-900 text-white shadow-md sticky top-0 z-30 shrink-0">
         <div class="max-w-7xl mx-auto px-3 py-2.5 flex flex-col sm:flex-row justify-between items-center gap-2.5">
             <div class="flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-start">
@@ -43,7 +44,6 @@
                     </div>
                 </div>
             </div>
-
             <div class="flex flex-wrap items-center justify-between sm:justify-end w-full sm:w-auto gap-2">
                 <div class="bg-emerald-950/70 p-1 rounded-xl flex gap-1 border border-emerald-700/50">
                     <button id="btnExp1" onclick="switchExperiment('sazonal')" class="px-2.5 py-1 text-[11px] font-medium rounded-lg transition-all shadow-sm bg-white text-emerald-950">
@@ -53,13 +53,15 @@
                         Poda
                     </button>
                 </div>
-
-                <div class="flex gap-1.5">
+                <div class="flex gap-1.5 flex-wrap">
                     <button onclick="saveData()" title="Salvar" class="bg-emerald-700 hover:bg-emerald-600 text-white px-2.5 py-1 rounded-xl text-xs font-semibold flex items-center gap-1 transition shadow">
                         <i class="fa-solid fa-floppy-disk"></i> <span class="hidden xs:inline">Salvar</span>
                     </button>
                     <button onclick="exportPDF()" title="Exportar PDF" class="bg-emerald-700 hover:bg-emerald-600 text-white px-2.5 py-1 rounded-xl text-xs font-semibold flex items-center gap-1 transition shadow">
                         <i class="fa-solid fa-file-pdf"></i> <span class="hidden xs:inline">PDF</span>
+                    </button>
+                    <button onclick="exportJPEG()" title="Exportar JPEG" class="bg-emerald-700 hover:bg-emerald-600 text-white px-2.5 py-1 rounded-xl text-xs font-semibold flex items-center gap-1 transition shadow">
+                        <i class="fa-solid fa-image"></i> <span class="hidden xs:inline">JPEG</span>
                     </button>
                     <button onclick="confirmClearData()" title="Limpar" class="bg-rose-700/90 hover:bg-rose-700 text-white px-2 py-1 rounded-xl text-xs font-semibold flex items-center transition shadow">
                         <i class="fa-solid fa-trash-can"></i>
@@ -68,7 +70,6 @@
             </div>
         </div>
     </header>
-
     <main class="flex-1 max-w-7xl w-full mx-auto px-2 sm:px-4 py-3 flex flex-col lg:flex-row gap-4 overflow-hidden">
         
         <!-- Left Sidebar: Controls & Legends -->
@@ -87,12 +88,10 @@
                 <div id="severityButtons" class="grid grid-cols-5 gap-1.5 mb-2">
                     <!-- Populated dynamically via JS -->
                 </div>
-
                 <button onclick="setSelectedValue('')" class="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 py-1.5 rounded-xl text-xs font-medium transition border border-slate-300 flex items-center justify-center gap-1">
                     <i class="fa-solid fa-eraser"></i> Borracha (Limpar Nota)
                 </button>
             </div>
-
             <!-- Severity Scale Legend -->
             <div class="bg-white rounded-2xl p-3 shadow-sm border border-slate-200">
                 <h2 class="text-xs font-bold text-slate-700 uppercase tracking-wider mb-2 flex items-center gap-1.5">
@@ -121,24 +120,8 @@
                     </div>
                 </div>
             </div>
-
-            <!-- Useful Area & Treatments Info -->
+            <!-- Treatments Info -->
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-3">
-                <div class="bg-white rounded-2xl p-3 shadow-sm border border-slate-200">
-                    <h2 class="text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
-                        <i class="fa-solid fa-table-cells text-emerald-600"></i> Área Útil (8 Plantas)
-                    </h2>
-                    <div class="flex items-center justify-between">
-                        <p class="text-[11px] text-slate-500">Mapeamento central:</p>
-                        <div class="grid grid-cols-2 gap-1 text-center text-[10px] font-semibold bg-slate-50 p-1 rounded-lg border border-slate-200 w-20">
-                            <div class="bg-emerald-100 text-emerald-900 rounded">5 | 4</div>
-                            <div class="bg-emerald-100 text-emerald-900 rounded">6 | 3</div>
-                            <div class="bg-emerald-100 text-emerald-900 rounded">7 | 2</div>
-                            <div class="bg-emerald-100 text-emerald-900 rounded">8 | 1</div>
-                        </div>
-                    </div>
-                </div>
-
                 <div class="bg-white rounded-2xl p-3 shadow-sm border border-slate-200">
                     <h2 class="text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
                         <i class="fa-solid fa-book-open text-emerald-600"></i> Tratamentos
@@ -148,7 +131,6 @@
                     </div>
                 </div>
             </div>
-
             <!-- Progress -->
             <div class="bg-emerald-50 border border-emerald-200 rounded-2xl p-3">
                 <div class="flex justify-between items-center mb-1">
@@ -160,32 +142,27 @@
                 </div>
             </div>
         </aside>
-
-        <section class="flex-1 bg-white rounded-2xl p-3 sm:p-5 shadow-sm border border-slate-200 flex flex-col overflow-y-auto">
+        <section id="captureArea" class="flex-1 bg-white rounded-2xl p-3 sm:p-5 shadow-sm border border-slate-200 flex flex-col overflow-y-auto">
             
             <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center pb-3 mb-3 border-b border-slate-200 gap-2">
                 <div>
                     <h2 id="experimentTitle" class="text-sm sm:text-base font-bold text-slate-800">AJUSTE SAZONAL TARTARUGALZINHO</h2>
-                    <p class="text-[11px] text-slate-500">24 quadrados por parcela (6 linhas × 4 colunas). As 8 plantas úteis centrais são interativas (notas 1 a 5).</p>
+                    <p class="text-[11px] text-slate-500">As 8 plantas úteis centrais são interativas (notas 1 a 5).</p>
                 </div>
                 <div class="flex items-center gap-1.5 bg-slate-100 px-2 py-1 rounded-xl border border-slate-200 text-[11px] font-medium text-slate-700 shrink-0">
                     <i class="fa-solid fa-arrow-right text-emerald-600"></i>
                     <span>SENTIDO DAS LEIRAS</span>
                 </div>
             </div>
-
             <!-- Field Sheets Container -->
             <div id="blocksContainer" class="space-y-6 pb-6">
                 <!-- Dynamically rendered blocks & plots side-by-side -->
             </div>
-
             <div class="mt-3 pt-3 border-t-2 border-dashed border-slate-300 flex items-center justify-center gap-2 text-slate-400 font-bold tracking-widest text-xs py-2.5 bg-slate-50 rounded-xl">
                 <span>— — — — RAMAL — — — —</span>
             </div>
         </section>
-
     </main>
-
     <div id="customModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
         <div class="bg-white rounded-2xl max-w-sm w-full p-5 shadow-xl border border-slate-200 scale-95 transition-transform" id="modalContent">
             <h3 id="modalTitle" class="text-base font-bold text-slate-800 mb-2">Confirmação</h3>
@@ -196,12 +173,10 @@
             </div>
         </div>
     </div>
-
     <div id="toast" class="fixed bottom-4 right-4 bg-slate-900 text-white px-3.5 py-2.5 rounded-xl shadow-lg text-xs font-medium flex items-center gap-2 transform translate-y-20 opacity-0 transition-all duration-300 z-50">
         <i id="toastIcon" class="fa-solid fa-circle-check text-emerald-400"></i>
         <span id="toastMsg">Salvo com sucesso!</span>
     </div>
-
     <script>
         const experimentsData = {
             sazonal: {
@@ -233,15 +208,12 @@
                 ]
             }
         };
-
         let currentExperiment = 'sazonal';
         let selectedValue = '1';
         let dataStore = {
             sazonal: {},
             poda: {}
         };
-
-        // Mapeamento exato das 8 plantas úteis centrais no retângulo vermelho (linhas 1 a 4, colunas 1 a 2 de uma grade 6x4)
         const usefulPlantsMap = {
             "1_1": 5,
             "1_2": 4,
@@ -252,12 +224,10 @@
             "4_1": 8,
             "4_2": 1
         };
-
         window.addEventListener('DOMContentLoaded', () => {
             loadFromLocalStorage();
             renderApp();
         });
-
         function switchExperiment(expKey) {
             currentExperiment = expKey;
             
@@ -271,16 +241,13 @@
                 btn2.className = "px-2.5 py-1 text-[11px] font-medium rounded-lg transition-all shadow-sm bg-white text-emerald-950";
                 btn1.className = "px-2.5 py-1 text-[11px] font-medium rounded-lg transition-all text-emerald-100 hover:text-white";
             }
-
             document.getElementById('experimentTitle').innerText = experimentsData[expKey].title;
             renderApp();
         }
-
         function setSelectedValue(val) {
             selectedValue = val;
             updateSeverityButtonsUI();
         }
-
         function updateSeverityButtonsUI() {
             const container = document.getElementById('severityButtons');
             let html = '';
@@ -291,7 +258,6 @@
                 if (isActive) {
                     colorClass = 'bg-emerald-600 text-white border-emerald-700 shadow-sm ring-2 ring-emerald-400/50';
                 }
-
                 html += `
                     <button onclick="setSelectedValue('${i}')" class="py-2 rounded-xl border font-bold text-xs transition flex flex-col items-center justify-center ${colorClass}">
                         <span>${i}</span>
@@ -300,7 +266,6 @@
             }
             container.innerHTML = html;
         }
-
         function renderLegend() {
             const container = document.getElementById('legendContainer');
             const treatments = experimentsData[currentExperiment].treatments;
@@ -316,11 +281,9 @@
             }
             container.innerHTML = html;
         }
-
         function renderApp() {
             updateSeverityButtonsUI();
             renderLegend();
-
             const exp = experimentsData[currentExperiment];
             const container = document.getElementById('blocksContainer');
             
@@ -331,11 +294,9 @@
                         <h3 class="text-xs sm:text-sm font-bold text-emerald-900 mb-2.5 flex items-center gap-2">
                             <i class="fa-solid fa-layer-group text-emerald-600"></i> ${block.name}
                         </h3>
-                        <!-- Container com scroll horizontal em telas menores para exibir as parcelas lado a lado -->
                         <div class="overflow-x-auto pb-2">
                             <div class="flex items-stretch gap-3 min-w-max">
                 `;
-
                 block.plots.forEach(plotNum => {
                     html += `
                         <div class="bg-white border border-slate-200 rounded-xl p-2.5 shadow-xs flex flex-col items-center w-[124px] shrink-0">
@@ -345,10 +306,8 @@
                                     ${plotNum}
                                 </div>
                             </div>
-                            <!-- Grade da Parcela: 6 linhas por 4 colunas (24 quadrados) -->
                             <div class="grid grid-cols-4 gap-1 w-full bg-slate-100 p-1 rounded-lg border-2 border-slate-300">
                     `;
-
                     for (let row = 0; row < 6; row++) {
                         for (let col = 0; col < 4; col++) {
                             const mapKey = `${row}_${col}`;
@@ -358,9 +317,7 @@
                             const cellKey = `${block.id}_${plotNum}_${row}_${col}`;
                             const val = (dataStore[currentExperiment] && dataStore[currentExperiment][cellKey]) || '';
                             const hasVal = val !== '';
-
                             if (isUseful) {
-                                // Plantas úteis destacadas com fundo vermelho claro e borda vermelha nítida conforme o desenho
                                 let bgStyle = hasVal 
                                     ? 'bg-emerald-600 text-white border-emerald-700 shadow-xs' 
                                     : 'bg-red-50 hover:bg-red-100 text-red-900 border-red-500 ring-1 ring-red-400/80';
@@ -382,48 +339,39 @@
                             }
                         }
                     }
-
                     html += `
                             </div>
                         </div>
                     `;
                 });
-
                 html += `
                             </div>
                         </div>
                     </div>
                 `;
             });
-
             container.innerHTML = html;
             updateProgress();
         }
-
         function handleCellClick(blockId, plotNum, row, col, isUseful) {
             if (!isUseful) return;
-
             const cellKey = `${blockId}_${plotNum}_${row}_${col}`;
             
             if (!dataStore[currentExperiment]) {
                 dataStore[currentExperiment] = {};
             }
-
             if (selectedValue === '') {
                 delete dataStore[currentExperiment][cellKey];
             } else {
                 dataStore[currentExperiment][cellKey] = selectedValue;
             }
-
             renderApp();
             autoSaveToLocalStorage();
         }
-
         function updateProgress() {
             const exp = experimentsData[currentExperiment];
             let totalUsefulCells = 0;
             let filledCells = 0;
-
             exp.blocks.forEach(block => {
                 block.plots.forEach(plotNum => {
                     totalUsefulCells += 8;
@@ -436,12 +384,10 @@
                     }
                 });
             });
-
             const percent = totalUsefulCells > 0 ? Math.round((filledCells / totalUsefulCells) * 100) : 0;
             document.getElementById('progressText').innerText = `${percent}% (${filledCells}/${totalUsefulCells})`;
             document.getElementById('progressBar').style.width = `${percent}%`;
         }
-
         function autoSaveToLocalStorage() {
             try {
                 localStorage.setItem('tartarugalzinho_field_data_vbm_v7', JSON.stringify(dataStore));
@@ -449,7 +395,6 @@
                 console.error("Storage error", e);
             }
         }
-
         function loadFromLocalStorage() {
             try {
                 const saved = localStorage.getItem('tartarugalzinho_field_data_vbm_v7');
@@ -460,12 +405,10 @@
                 console.error("Load error", e);
             }
         }
-
         function saveData() {
             autoSaveToLocalStorage();
             showToast("Notas salvas com sucesso no dispositivo!", "success");
         }
-
         function confirmClearData() {
             const modal = document.getElementById('customModal');
             document.getElementById('modalTitle').innerText = "Limpar Avaliações Atuais";
@@ -481,15 +424,12 @@
             };
             modal.classList.remove('hidden');
         }
-
         function exportPDF() {
             const { jsPDF } = window.jspdf;
             const doc = new jsPDF('p', 'mm', 'a4');
             const expName = experimentsData[currentExperiment].title;
             const expData = dataStore[currentExperiment] || {};
-
-            // Cabeçalho do PDF
-            doc.setFillColor(6, 78, 59); // Emerald 900
+            doc.setFillColor(6, 78, 59);
             doc.rect(0, 0, 210, 25, 'F');
             doc.setTextColor(255, 255, 255);
             doc.setFont('helvetica', 'bold');
@@ -498,15 +438,12 @@
             doc.setFontSize(10);
             doc.setFont('helvetica', 'normal');
             doc.text(`Experimento: ${expName}`, 14, 19);
-
             let yPos = 35;
             doc.setTextColor(30, 41, 59);
             doc.setFont('helvetica', 'bold');
             doc.setFontSize(11);
             doc.text("Registros de Severidade VBM por Bloco e Parcela:", 14, yPos);
             yPos += 8;
-
-            // Tabela com dados
             let tableData = [];
             const exp = experimentsData[currentExperiment];
             
@@ -528,13 +465,11 @@
                     }
                 });
             });
-
             if (tableData.length === 0) {
                 doc.setFont('helvetica', 'italic');
                 doc.setFontSize(10);
                 doc.text("Nenhuma planta avaliada preenchida até o momento.", 14, yPos);
             } else {
-                // Desenhar tabela simples em PDF
                 doc.setFont('helvetica', 'bold');
                 doc.setFontSize(9);
                 doc.setFillColor(241, 245, 249);
@@ -544,7 +479,6 @@
                 doc.text("Planta Útil", 90, yPos + 6);
                 doc.text("Nota VBM", 160, yPos + 6);
                 yPos += 8;
-
                 doc.setFont('helvetica', 'normal');
                 tableData.forEach((row, idx) => {
                     if (yPos > 270) {
@@ -562,33 +496,46 @@
                     yPos += 7;
                 });
             }
-
-            // Rodapé
             doc.setFontSize(8);
             doc.setTextColor(100, 100, 100);
             doc.text("Relatório gerado pelo Aplicativo de Planilhas de Campo - Tartarugalzinho", 14, 285);
-
-            // Salvar PDF
             doc.save(`Relatorio_${currentExperiment}_Tartarugalzinho.pdf`);
             showToast("Relatório PDF exportado com sucesso!", "success");
         }
-
+        function exportJPEG() {
+            const captureElement = document.getElementById('captureArea');
+            if (!captureElement) return;
+            
+            showToast("Gerando imagem JPEG...", "success");
+            html2canvas(captureElement, {
+                scale: 2,
+                useCORS: true,
+                backgroundColor: '#ffffff'
+            }).then(canvas => {
+                const link = document.createElement('a');
+                link.download = `Planilha_${currentExperiment}_Tartarugalzinho.jpg`;
+                link.href = canvas.toDataURL('image/jpeg', 0.92);
+                link.click();
+                showToast("Imagem JPEG exportada com sucesso!", "success");
+            }).catch(err => {
+                console.error("JPEG export error:", err);
+                showToast("Erro ao exportar JPEG.", "error");
+            });
+        }
         function closeModal() {
             document.getElementById('customModal').classList.add('hidden');
         }
-
         function showToast(message, type = 'success') {
             const toast = document.getElementById('toast');
             const msgEl = document.getElementById('toastMsg');
             const iconEl = document.getElementById('toastIcon');
             
             msgEl.innerText = message;
-if (type === 'success') {
+            if (type === 'success') {
                 iconEl.className = "fa-solid fa-circle-check text-emerald-400";
             } else {
                 iconEl.className = "fa-solid fa-triangle-exclamation text-rose-400";
             }
-
             toast.classList.remove('translate-y-20', 'opacity-0');
             setTimeout(() => {
                 toast.classList.add('translate-y-20', 'opacity-0');
@@ -597,9 +544,3 @@ if (type === 'success') {
     </script>
 </body>
 </html>
-
-
-
-
-
-
