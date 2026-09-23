@@ -208,6 +208,16 @@
                 ]
             }
         };
+
+        // Mapeamento oficial de cores da Escala VBM
+        const scaleColors = {
+            '1': 'bg-emerald-600 text-white border-emerald-700',
+            '2': 'bg-amber-500 text-white border-amber-600',
+            '3': 'bg-orange-500 text-white border-orange-600',
+            '4': 'bg-red-500 text-white border-red-600',
+            '5': 'bg-purple-700 text-white border-purple-800'
+        };
+
         let currentExperiment = 'sazonal';
         let selectedValue = '1';
         let dataStore = {
@@ -254,12 +264,13 @@
             
             for (let i = 1; i <= 5; i++) {
                 const isActive = selectedValue === String(i);
-                let colorClass = 'bg-slate-50 hover:bg-slate-100 text-slate-800 border-slate-200';
-                if (isActive) {
-                    colorClass = 'bg-emerald-600 text-white border-emerald-700 shadow-sm ring-2 ring-emerald-400/50';
-                }
+                const colorClass = scaleColors[i];
+                const activeStyle = isActive 
+                    ? 'ring-4 ring-slate-800 scale-105 shadow-md font-extrabold opacity-100 z-10' 
+                    : 'opacity-70 hover:opacity-100 border-transparent';
+
                 html += `
-                    <button onclick="setSelectedValue('${i}')" class="py-2 rounded-xl border font-bold text-xs transition flex flex-col items-center justify-center ${colorClass}">
+                    <button onclick="setSelectedValue('${i}')" class="py-2 rounded-xl border font-bold text-xs transition-all flex flex-col items-center justify-center ${colorClass} ${activeStyle}">
                         <span>${i}</span>
                     </button>
                 `;
@@ -319,7 +330,7 @@
                             const hasVal = val !== '';
                             if (isUseful) {
                                 let bgStyle = hasVal 
-                                    ? 'bg-emerald-600 text-white border-emerald-700 shadow-xs' 
+                                    ? `${scaleColors[val] || 'bg-emerald-600 text-white border-emerald-700'} shadow-xs` 
                                     : 'bg-red-50 hover:bg-red-100 text-red-900 border-red-500 ring-1 ring-red-400/80';
                                 
                                 html += `
